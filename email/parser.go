@@ -73,9 +73,10 @@ func parseMessageWithHeader(headers Header, bodyReader io.Reader) (*Message, err
 			}
 		}
 
+	} else if mediaType == "message/feedback-report" {
+		body, err = ioutil.ReadAll(bufferedReader)
 	} else if strings.HasPrefix(mediaType, "message") {
 		subMessage, err = ParseMessage(bufferedReader)
-
 	} else {
 		body, err = ioutil.ReadAll(bufferedReader)
 	}
