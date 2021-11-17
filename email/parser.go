@@ -37,6 +37,20 @@ func ParseMessage(r io.Reader) (*Message, error) {
 	return parseMessageWithHeader(Header(msg.Header), msg.Body)
 }
 
+func ParseFeedbackReportMessage(r io.Reader) (*Message, error) {
+	msg, err := mail.ReadMessage(r)
+	if err != nil {
+		return nil, err
+	}
+	// decode any Q-encoded values
+	for _, values := range msg.Header {
+		for idx, val := range values {
+			values[idx] = decodeRFC2047(val)
+		}
+	}
+	return &Message{Header: Header(msg.Header)}, nil
+}
+
 // parseMessageWithHeader parses and returns a Message from an already filled
 // Header, and an io.Reader containing the raw text of the body/payload.
 // (If the raw body is a string or []byte, use strings.NewReader()
@@ -75,6 +89,10 @@ func parseMessageWithHeader(headers Header, bodyReader io.Reader) (*Message, err
 
 	} else if mediaType == "message/feedback-report" {
 		body, err = ioutil.ReadAll(bufferedReader)
+		body = append(body, []byte("\r\n")...)
+		if err == nil {
+			subMessage, err = ParseFeedbackReportMessage(bytes.NewReader(body))
+		}
 	} else if strings.HasPrefix(mediaType, "message") {
 		subMessage, err = ParseMessage(bufferedReader)
 	} else {
